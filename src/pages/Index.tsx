@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Phone, Mail, MapPin, Linkedin, Download, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,11 +53,12 @@ const Index = () => {
       try {
         console.log('Fetching badges from Credly...');
         
-        // Using a CORS proxy if needed (you might need to set up your own proxy server)
-        // const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        // Using allorigins.win as CORS proxy
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
         const targetUrl = 'https://www.credly.com/users/abdelrhman-ayman.c436c9f0/badges.json';
+        const fullUrl = proxyUrl + encodeURIComponent(targetUrl);
         
-        const response = await fetch(targetUrl, {
+        const response = await fetch(fullUrl, {
           headers: {
             'Accept': 'application/json'
           }
@@ -77,14 +77,15 @@ const Index = () => {
             new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime()
           );
           setBadges(sortedBadges);
+          setError(null);
         } else {
           setBadges([]);
         }
       } catch (error) {
         console.error('Error fetching Credly badges:', error);
-        setError('Failed to load badges. Please try again later or check the console for details.');
+        setError('Failed to load badges from Credly. Displaying sample data instead.');
         
-        // Fallback to the sample data you provided
+        // Fallback to comprehensive sample data
         const sampleData: CredlyBadge[] = [
           {
             id: "e9f6859e-f330-470b-9955-91e27802ee10",
@@ -147,6 +148,37 @@ const Index = () => {
               }]
             },
             image_url: "https://images.credly.com/images/f4ccdba9-dd65-4349-baad-8f05df116443/CCNASRWE__1_.png"
+          },
+          {
+            id: "sample-3",
+            expires_at_date: null,
+            issued_at_date: "2024-05-15",
+            issued_to: "Abdelrhman Ayman",
+            public: true,
+            state: "accepted",
+            accepted_at: "2024-05-15T10:30:00.000-05:00",
+            expires_at: null,
+            issued_at: "2024-05-15T10:30:00.000-05:00",
+            badge_template: {
+              name: "CCNA: Enterprise Networking, Security, and Automation",
+              description: "Cisco verifies the earner of this badge successfully completed the Enterprise Networking, Security, and Automation course and achieved this student level credential. The earner has knowledge of enterprise networking including WAN technologies, QoS mechanisms, and network automation and programmability.",
+              image_url: "https://images.credly.com/images/0a00ff18-3e19-4bfd-9c48-90ef59511cec/CCNAENSA__1_.png",
+              global_activity_url: "https://www.netacad.com/courses/ccna-enterprise-networking-security-automation",
+              level: null,
+              skills: [
+                { name: "Network Automation", vanity_slug: "network-automation" },
+                { name: "Enterprise Security", vanity_slug: "enterprise-security" },
+                { name: "WAN Technologies", vanity_slug: "wan-technologies" }
+              ]
+            },
+            issuer: {
+              entities: [{
+                entity: {
+                  name: "Cisco"
+                }
+              }]
+            },
+            image_url: "https://images.credly.com/images/0a00ff18-3e19-4bfd-9c48-90ef59511cec/CCNAENSA__1_.png"
           }
         ];
         setBadges(sampleData);
@@ -373,16 +405,17 @@ const Index = () => {
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <p className="text-red-600 mb-4">{error}</p>
-              <p className="text-gray-600">Displaying sample data instead.</p>
+              <p className="text-orange-600 mb-4">{error}</p>
             </div>
-          ) : badges.length > 0 ? (
+          ) : null}
+          
+          {badges.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {badges.map((badge) => (
                 <Card key={badge.id} className="p-6 shadow-lg hover:shadow-xl transition-all hover-scale">
                   <CardContent className="text-center">
                     <img 
-                      src={badge.image_url || badge.badge_template.image_url} 
+                      src={badge.badge_template.image_url} 
                       alt={badge.badge_template.name}
                       className="w-32 h-32 mx-auto mb-4 object-contain"
                       onError={(e) => {
