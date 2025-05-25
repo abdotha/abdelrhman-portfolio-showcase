@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Phone, Mail, MapPin, Linkedin, Download, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,45 +7,60 @@ import { Button } from '@/components/ui/button';
 
 interface CredlyBadge {
   id: string;
+  expires_at_date: string | null;
   issued_at_date: string;
   issued_to: string;
-  public: true;
+  public: boolean;
+  state: string;
+  accepted_at: string;
+  expires_at: string | null;
+  issued_at: string;
   badge_template: {
-    id: string;
     name: string;
     description: string;
     image_url: string;
+    global_activity_url: string;
+    level: string | null;
+    skills: Array<{
+      name: string;
+      vanity_slug: string;
+    }>;
   };
   issuer: {
-    summary: string;
     entities: Array<{
       entity: {
         name: string;
       };
     }>;
   };
+  image_url: string;
 }
 
-interface CredlyApiResponse {
+interface CredlyResponse {
   data: CredlyBadge[];
+  metadata: {
+    count: number;
+    total_count: number;
+  };
 }
 
 const Index = () => {
   const [badges, setBadges] = useState<CredlyBadge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCredlyBadges = async () => {
       try {
-        // Using a CORS proxy to fetch the Credly badges
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const targetUrl = 'https://www.credly.com/users/abdelrhman-ayman.c436c9f0/badges.json';
-        
         console.log('Fetching badges from Credly...');
         
-        const response = await fetch(proxyUrl + targetUrl, {
+        // Using a CORS proxy if needed (you might need to set up your own proxy server)
+        // const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const targetUrl = 'https://www.credly.com/users/abdelrhman-ayman.c436c9f0/badges.json';
+        
+        const response = await fetch(targetUrl, {
           headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'Accept': 'application/json'
           }
         });
         
@@ -52,88 +68,88 @@ const Index = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data: CredlyApiResponse = await response.json();
+        const data: CredlyResponse = await response.json();
         console.log('Credly API response:', data);
         
-        // Extract badges from the API response
-        const badgesData = data.data || [];
-        console.log('Processed badges data:', badgesData);
-        
-        setBadges(badgesData);
+        if (data.data && data.data.length > 0) {
+          // Sort badges by issued date (newest first)
+          const sortedBadges = [...data.data].sort((a, b) => 
+            new Date(b.issued_at).getTime() - new Date(a.issued_at).getTime()
+          );
+          setBadges(sortedBadges);
+        } else {
+          setBadges([]);
+        }
       } catch (error) {
         console.error('Error fetching Credly badges:', error);
-        console.log('Falling back to demo data for development...');
+        setError('Failed to load badges. Please try again later or check the console for details.');
         
-        // Demo data that matches the actual API structure
-        const demoData: CredlyBadge[] = [
+        // Fallback to the sample data you provided
+        const sampleData: CredlyBadge[] = [
           {
-            id: 'e9f6859e-f330-470b-9955-91e27802ee10',
-            issued_at_date: '2024-06-21',
-            issued_to: 'Abdelrhman Ayman',
+            id: "e9f6859e-f330-470b-9955-91e27802ee10",
+            expires_at_date: null,
+            issued_at_date: "2024-06-21",
+            issued_to: "Abdelrhman Ayman",
             public: true,
+            state: "accepted",
+            accepted_at: "2024-06-21T12:16:55.523-05:00",
+            expires_at: null,
+            issued_at: "2024-06-21T11:07:42.000-05:00",
             badge_template: {
-              id: '227dafde-5f07-4968-ae2f-75e8246f85b3',
-              name: 'CCNA: Introduction to Networks',
-              description: 'Cisco verifies the earner of this badge successfully completed the Introduction to Networks course and achieved this student level credential. Earner has knowledge of networking including IP addressing, how physical, data link protocols support Ethernet, can configure connectivity between switches, routers and end devices to provide access to local and remote resources.',
-              image_url: 'https://images.credly.com/images/70d71df5-f3dc-4380-9b9d-f22513a70417/CCNAITN__1_.png'
+              name: "CCNA: Introduction to Networks",
+              description: "Cisco verifies the earner of this badge successfully completed the Introduction to Networks course and achieved this student level credential. Earner has knowledge of networking including IP addressing, how physical, data link protocols support Ethernet, can configure connectivity between switches, routers and end devices to provide access to local and remote resources. Earner participated in up to 54 labs and accumulated up to 14 hours of hands-on labs using Cisco hardware or Packet Tracer tool",
+              image_url: "https://images.credly.com/images/70d71df5-f3dc-4380-9b9d-f22513a70417/CCNAITN__1_.png",
+              global_activity_url: "https://www.netacad.com/courses/ccna-introduction-networks",
+              level: null,
+              skills: [
+                { name: "Ethernet", vanity_slug: "ethernet" },
+                { name: "IP connectivity", vanity_slug: "ip-connectivity" },
+                { name: "IP services", vanity_slug: "ip-services" }
+              ]
             },
             issuer: {
-              summary: 'issued by Cisco',
-              entities: [
-                {
-                  entity: {
-                    name: 'Cisco'
-                  }
+              entities: [{
+                entity: {
+                  name: "Cisco"
                 }
-              ]
-            }
+              }]
+            },
+            image_url: "https://images.credly.com/images/70d71df5-f3dc-4380-9b9d-f22513a70417/CCNAITN__1_.png"
           },
           {
-            id: 'demo-2',
-            issued_at_date: '2024-03-15',
-            issued_to: 'Abdelrhman Ayman',
+            id: "0f638d3c-176f-4137-baa3-fd057f1fcdaf",
+            expires_at_date: null,
+            issued_at_date: "2024-06-21",
+            issued_to: "Abdelrhman Ayman",
             public: true,
+            state: "accepted",
+            accepted_at: "2024-06-21T12:16:55.700-05:00",
+            expires_at: null,
+            issued_at: "2024-06-21T11:02:26.000-05:00",
             badge_template: {
-              id: 'demo-template-2',
-              name: 'Network Security Fundamentals',
-              description: 'This badge demonstrates foundational knowledge in network security principles, threat detection, and security protocol implementation.',
-              image_url: 'https://images.credly.com/images/74b40f60-33f1-4b50-8a21-9c68a1b4d38b/Network_Security_Fundamentals.png'
+              name: "CCNA: Switching, Routing, and Wireless Essentials",
+              description: "Cisco verifies the earner of this badge successfully completed the Switching, Routing, and Wireless Essentials course and achieved this student level credential. The earner has a foundation in switching operations, wired and wireless LAN configuration using security best practices, redundancy protocols, and developed problem-solving skills. Earner participated in up to 45 practice activities and accumulated up to 21 hours of hands-on labs using Cisco hardware and/or the Cisco Packet Tracer tool.",
+              image_url: "https://images.credly.com/images/f4ccdba9-dd65-4349-baad-8f05df116443/CCNASRWE__1_.png",
+              global_activity_url: "https://www.netacad.com/courses/ccna-switching-routing-wireless-essentials",
+              level: null,
+              skills: [
+                { name: "Access Connectivity", vanity_slug: "access-connectivity" },
+                { name: "Access Security", vanity_slug: "access-security" },
+                { name: "Routing", vanity_slug: "routing" }
+              ]
             },
             issuer: {
-              summary: 'issued by Cisco',
-              entities: [
-                {
-                  entity: {
-                    name: 'Cisco'
-                  }
+              entities: [{
+                entity: {
+                  name: "Cisco"
                 }
-              ]
-            }
-          },
-          {
-            id: 'demo-3',
-            issued_at_date: '2024-01-10',
-            issued_to: 'Abdelrhman Ayman',
-            public: true,
-            badge_template: {
-              id: 'demo-template-3',
-              name: 'Python Programming Essentials',
-              description: 'This badge validates skills in Python programming fundamentals, including data structures, algorithms, and object-oriented programming concepts.',
-              image_url: 'https://images.credly.com/images/68c0b94d-f394-4de8-aa36-d123b05fd98f/python-essentials-1.png'
+              }]
             },
-            issuer: {
-              summary: 'issued by Cisco',
-              entities: [
-                {
-                  entity: {
-                    name: 'Cisco Networking Academy'
-                  }
-                }
-              ]
-            }
+            image_url: "https://images.credly.com/images/f4ccdba9-dd65-4349-baad-8f05df116443/CCNASRWE__1_.png"
           }
         ];
-        setBadges(demoData);
+        setBadges(sampleData);
       } finally {
         setLoading(false);
       }
@@ -355,40 +371,52 @@ const Index = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               <span className="ml-4 text-gray-600">Loading badges from Credly...</span>
             </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-red-600 mb-4">{error}</p>
+              <p className="text-gray-600">Displaying sample data instead.</p>
+            </div>
           ) : badges.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {badges.map((badge) => (
                 <Card key={badge.id} className="p-6 shadow-lg hover:shadow-xl transition-all hover-scale">
                   <CardContent className="text-center">
                     <img 
-                      src={badge.badge_template.image_url} 
+                      src={badge.image_url || badge.badge_template.image_url} 
                       alt={badge.badge_template.name}
-                      className="w-24 h-24 mx-auto mb-4 rounded-lg"
+                      className="w-32 h-32 mx-auto mb-4 object-contain"
                       onError={(e) => {
                         console.log('Image failed to load, using fallback');
-                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iOCIgZmlsbD0iIzMzNzNkYyIvPgo8dGV4dCB4PSI0OCIgeT0iNTQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5CQURHRTU8L3RleHQ+Cjwvc3ZnPgo=';
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iOCIgZmlsbD0iIzMzNzNkYyIvPgo8dGV4dCB4PSI0OCIgeT0iNTQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5CQURHRTwvdGV4dD4KPC9zdmc+Cg==';
                       }}
                     />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       {badge.badge_template.name}
                     </h3>
                     <p className="text-blue-600 font-medium mb-3">
-                      {badge.issuer.entities[0]?.entity.name || 'Badge Issuer'}
+                      {badge.issuer.entities[0]?.entity?.name || 'Cisco'}
                     </p>
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                       {badge.badge_template.description}
                     </p>
+                    <div className="flex flex-wrap gap-2 justify-center mb-4">
+                      {badge.badge_template.skills?.slice(0, 3).map((skill, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {skill.name}
+                        </Badge>
+                      ))}
+                    </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500">
-                        {new Date(badge.issued_at_date).toLocaleDateString()}
+                        {new Date(badge.issued_at).toLocaleDateString()}
                       </span>
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => window.open(`https://www.credly.com/badges/${badge.id}`, '_blank')}
+                        onClick={() => window.open(badge.badge_template.global_activity_url, '_blank')}
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
-                        View
+                        Details
                       </Button>
                     </div>
                   </CardContent>
@@ -397,8 +425,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">Unable to load badges at this time. Please check back later.</p>
-              <p className="text-gray-500 text-sm mt-2">Due to CORS restrictions, badge loading may be limited in this environment.</p>
+              <p className="text-gray-600 text-lg">No badges found.</p>
             </div>
           )}
         </section>
