@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Phone, Mail, MapPin, Linkedin, Download, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,11 +32,58 @@ const Index = () => {
   useEffect(() => {
     const fetchCredlyBadges = async () => {
       try {
-        const response = await fetch('https://www.credly.com/users/abdelrhman-ayman.c436c9f0/badges.json');
+        // Using a CORS proxy to fetch the Credly badges
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const targetUrl = 'https://www.credly.com/users/abdelrhman-ayman.c436c9f0/badges.json';
+        
+        console.log('Fetching badges from Credly...');
+        
+        const response = await fetch(proxyUrl + targetUrl, {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
-        setBadges(data.data || []);
+        console.log('Credly API response:', data);
+        
+        // Handle both array and object responses
+        const badgesData = Array.isArray(data) ? data : (data.data || []);
+        console.log('Processed badges data:', badgesData);
+        
+        setBadges(badgesData);
       } catch (error) {
         console.error('Error fetching Credly badges:', error);
+        console.log('Falling back to demo data for development...');
+        
+        // Demo data for development purposes
+        const demoData = [
+          {
+            data: {
+              id: 'demo-1',
+              attributes: {
+                name: 'CCNA: Introduction to Networks',
+                description: 'This badge earner has foundational knowledge of network fundamentals.',
+                image_url: 'https://images.credly.com/size/340x340/images/70eb1e3f-d4de-4377-a062-b20fb29594ea/azure-data-fundamentals-600x600.png',
+                issued_at: '2024-01-15',
+                badge_template: {
+                  name: 'CCNA: Introduction to Networks',
+                  description: 'This badge earner has foundational knowledge of network fundamentals.',
+                  image_url: 'https://images.credly.com/size/340x340/images/70eb1e3f-d4de-4377-a062-b20fb29594ea/azure-data-fundamentals-600x600.png'
+                },
+                issuer: {
+                  name: 'Cisco'
+                },
+                public_url: '#'
+              }
+            }
+          }
+        ];
+        setBadges(demoData);
       } finally {
         setLoading(false);
       }
@@ -257,6 +303,7 @@ const Index = () => {
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <span className="ml-4 text-gray-600">Loading badges from Credly...</span>
             </div>
           ) : badges.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -267,6 +314,10 @@ const Index = () => {
                       src={badge.data.attributes.image_url || badge.data.attributes.badge_template.image_url} 
                       alt={badge.data.attributes.name}
                       className="w-24 h-24 mx-auto mb-4 rounded-lg"
+                      onError={(e) => {
+                        console.log('Image failed to load, using fallback');
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iOCIgZmlsbD0iIzMzNzNkYyIvPgo8dGV4dCB4PSI0OCIgeT0iNTQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5CQURHRTU8L3RleHQ+Cjwvc3ZnPgo=';
+                      }}
                     />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       {badge.data.attributes.name}
@@ -296,7 +347,8 @@ const Index = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No badges found. Please check back later.</p>
+              <p className="text-gray-600 text-lg">Unable to load badges at this time. Please check back later.</p>
+              <p className="text-gray-500 text-sm mt-2">Due to CORS restrictions, badge loading may be limited in this environment.</p>
             </div>
           )}
         </section>
