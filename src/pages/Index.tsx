@@ -5,24 +5,28 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 interface CredlyBadge {
-  data: {
+  id: string;
+  issued_at_date: string;
+  issued_to: string;
+  public: true;
+  badge_template: {
     id: string;
-    attributes: {
-      name: string;
-      description: string;
-      image_url: string;
-      issued_at: string;
-      badge_template: {
-        name: string;
-        description: string;
-        image_url: string;
-      };
-      issuer: {
-        name: string;
-      };
-      public_url: string;
-    };
+    name: string;
+    description: string;
+    image_url: string;
   };
+  issuer: {
+    summary: string;
+    entities: Array<{
+      entity: {
+        name: string;
+      };
+    }>;
+  };
+}
+
+interface CredlyApiResponse {
+  data: CredlyBadge[];
 }
 
 const Index = () => {
@@ -48,11 +52,11 @@ const Index = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data = await response.json();
+        const data: CredlyApiResponse = await response.json();
         console.log('Credly API response:', data);
         
-        // Handle both array and object responses
-        const badgesData = Array.isArray(data) ? data : (data.data || []);
+        // Extract badges from the API response
+        const badgesData = data.data || [];
         console.log('Processed badges data:', badgesData);
         
         setBadges(badgesData);
@@ -60,26 +64,72 @@ const Index = () => {
         console.error('Error fetching Credly badges:', error);
         console.log('Falling back to demo data for development...');
         
-        // Demo data for development purposes
-        const demoData = [
+        // Demo data that matches the actual API structure
+        const demoData: CredlyBadge[] = [
           {
-            data: {
-              id: 'demo-1',
-              attributes: {
-                name: 'CCNA: Introduction to Networks',
-                description: 'This badge earner has foundational knowledge of network fundamentals.',
-                image_url: 'https://images.credly.com/size/340x340/images/70eb1e3f-d4de-4377-a062-b20fb29594ea/azure-data-fundamentals-600x600.png',
-                issued_at: '2024-01-15',
-                badge_template: {
-                  name: 'CCNA: Introduction to Networks',
-                  description: 'This badge earner has foundational knowledge of network fundamentals.',
-                  image_url: 'https://images.credly.com/size/340x340/images/70eb1e3f-d4de-4377-a062-b20fb29594ea/azure-data-fundamentals-600x600.png'
-                },
-                issuer: {
-                  name: 'Cisco'
-                },
-                public_url: '#'
-              }
+            id: 'e9f6859e-f330-470b-9955-91e27802ee10',
+            issued_at_date: '2024-06-21',
+            issued_to: 'Abdelrhman Ayman',
+            public: true,
+            badge_template: {
+              id: '227dafde-5f07-4968-ae2f-75e8246f85b3',
+              name: 'CCNA: Introduction to Networks',
+              description: 'Cisco verifies the earner of this badge successfully completed the Introduction to Networks course and achieved this student level credential. Earner has knowledge of networking including IP addressing, how physical, data link protocols support Ethernet, can configure connectivity between switches, routers and end devices to provide access to local and remote resources.',
+              image_url: 'https://images.credly.com/images/70d71df5-f3dc-4380-9b9d-f22513a70417/CCNAITN__1_.png'
+            },
+            issuer: {
+              summary: 'issued by Cisco',
+              entities: [
+                {
+                  entity: {
+                    name: 'Cisco'
+                  }
+                }
+              ]
+            }
+          },
+          {
+            id: 'demo-2',
+            issued_at_date: '2024-03-15',
+            issued_to: 'Abdelrhman Ayman',
+            public: true,
+            badge_template: {
+              id: 'demo-template-2',
+              name: 'Network Security Fundamentals',
+              description: 'This badge demonstrates foundational knowledge in network security principles, threat detection, and security protocol implementation.',
+              image_url: 'https://images.credly.com/images/74b40f60-33f1-4b50-8a21-9c68a1b4d38b/Network_Security_Fundamentals.png'
+            },
+            issuer: {
+              summary: 'issued by Cisco',
+              entities: [
+                {
+                  entity: {
+                    name: 'Cisco'
+                  }
+                }
+              ]
+            }
+          },
+          {
+            id: 'demo-3',
+            issued_at_date: '2024-01-10',
+            issued_to: 'Abdelrhman Ayman',
+            public: true,
+            badge_template: {
+              id: 'demo-template-3',
+              name: 'Python Programming Essentials',
+              description: 'This badge validates skills in Python programming fundamentals, including data structures, algorithms, and object-oriented programming concepts.',
+              image_url: 'https://images.credly.com/images/68c0b94d-f394-4de8-aa36-d123b05fd98f/python-essentials-1.png'
+            },
+            issuer: {
+              summary: 'issued by Cisco',
+              entities: [
+                {
+                  entity: {
+                    name: 'Cisco Networking Academy'
+                  }
+                }
+              ]
             }
           }
         ];
@@ -308,11 +358,11 @@ const Index = () => {
           ) : badges.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {badges.map((badge) => (
-                <Card key={badge.data.id} className="p-6 shadow-lg hover:shadow-xl transition-all hover-scale">
+                <Card key={badge.id} className="p-6 shadow-lg hover:shadow-xl transition-all hover-scale">
                   <CardContent className="text-center">
                     <img 
-                      src={badge.data.attributes.image_url || badge.data.attributes.badge_template.image_url} 
-                      alt={badge.data.attributes.name}
+                      src={badge.badge_template.image_url} 
+                      alt={badge.badge_template.name}
                       className="w-24 h-24 mx-auto mb-4 rounded-lg"
                       onError={(e) => {
                         console.log('Image failed to load, using fallback');
@@ -320,22 +370,22 @@ const Index = () => {
                       }}
                     />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {badge.data.attributes.name}
+                      {badge.badge_template.name}
                     </h3>
                     <p className="text-blue-600 font-medium mb-3">
-                      {badge.data.attributes.issuer.name}
+                      {badge.issuer.entities[0]?.entity.name || 'Badge Issuer'}
                     </p>
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                      {badge.data.attributes.description || badge.data.attributes.badge_template.description}
+                      {badge.badge_template.description}
                     </p>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500">
-                        {new Date(badge.data.attributes.issued_at).toLocaleDateString()}
+                        {new Date(badge.issued_at_date).toLocaleDateString()}
                       </span>
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => window.open(badge.data.attributes.public_url, '_blank')}
+                        onClick={() => window.open(`https://www.credly.com/badges/${badge.id}`, '_blank')}
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
                         View
